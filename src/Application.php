@@ -3,6 +3,7 @@
 namespace Linkedcode\Slim;
 
 use DI\ContainerBuilder;
+use Exception;
 use Slim\App;
 
 class Application
@@ -33,7 +34,8 @@ class Application
     {
         $routes = $this->appDir . '/app/routes.php';
         if (file_exists($routes)) {
-            $routes($this->app);
+            $func = require_once $routes;
+            $func($this->app);
         }
     }
 
@@ -41,7 +43,8 @@ class Application
     {
         $middleware = $this->appDir . '/app/middleware.php';
         if (file_exists($middleware)) {
-            $middleware($this->app);
+            $func = require_once $middleware;
+            $func($this->app);
         }
     }
 
@@ -58,7 +61,10 @@ class Application
     {
         $definitions = $this->appDir . '/app/definitions.php';
         if (file_exists($definitions)) {
-            $definitions($containerBuilder);
+            $func = require_once $definitions;
+            $func($containerBuilder);
+        } else {
+            throw new Exception($definitions . " is required.");
         }
 
         //$db = require __DIR__ . '/../app/db.php';
