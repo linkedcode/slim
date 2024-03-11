@@ -1,7 +1,8 @@
 <?php
 
-namespace Linkedcode\Validation;
+namespace Linkedcode\Slim\Middleware;
 
+use Linkedcode\Slim\ValidationException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Linkedcode\Validation;
+namespace Linkedcode\Slim;
 
 use DomainException;
 use JsonSerializable;
