@@ -1,0 +1,8 @@
+{
+    "name": "linkedcode/slim",
+    "autoload": {
+        "psr-4": {
+            "Linkedcode\\Slim\\": "src/"
+        }
+    }
+}
