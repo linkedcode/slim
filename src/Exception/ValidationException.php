@@ -1,24 +1,30 @@
 <?php
 
-namespace Linkedcode\Slim\Exception;
+namespace Linkedcode\Validation;
 
-use Exception;
+use DomainException;
+use JsonSerializable;
+use Throwable;
 
-class ValidationException extends Exception
+final class ValidationException extends DomainException implements JsonSerializable
 {
-    protected $errors = [];
+    private array $errors;
 
-    protected $code = 400;
-
-    protected $message = 'Bad request.';
-
-    public function __construct(array $errors)
+    public function __construct(string $message, array $errors = [], int $code = 422, Throwable $previous = null)
     {
+        parent::__construct($message, $code, $previous);
         $this->errors = $errors;
     }
 
-    public function getErrors()
+    public function getErrors(): array
     {
         return $this->errors;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return array(
+            'errors' => $this->errors
+        );
     }
 }
