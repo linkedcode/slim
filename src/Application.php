@@ -4,29 +4,33 @@ namespace Linkedcode\Slim;
 
 use DI\ContainerBuilder;
 use Exception;
+use Psr\Container\ContainerInterface;
 use Slim\App;
 
 class Application
 {
     private App $app;
     private string $appDir;
+    private ContainerBuilder $containerBuilder;
 
-    public function __construct($appDir)
+    public function __construct(string $appDir)
     {
         $this->appDir = $appDir;
-        $container = $this->createContainer();
+        $this->containerBuilder = new ContainerBuilder();
 
-        //$listeners = require __DIR__ . '/../app/listeners.php';
-        //$listeners($container);
+        $this->loadDefinitions();
+        $this->loadSettings();
+    }
+
+    public function run()
+    {
+        $container = $this->containerBuilder->build();
 
         $this->app = $container->get(App::class);
 
         $this->loadMiddlewares();
         $this->loadRoutes();
-    }
 
-    public function run()
-    {
         $this->app->run();
     }
 
@@ -48,21 +52,32 @@ class Application
         }
     }
 
-    private function createContainer()
+    private function loadSettings()
     {
-        $containerBuilder = new ContainerBuilder();
-
-        $this->loadDefinitions($containerBuilder);
+        $settings = $this->appDir . '/config/settings.php';
         
-        return $containerBuilder->build();
+        if (!file_exists($settings)) {
+            return;
+        }
+
+        $defs = array(
+            Settings::class => function(ContainerInterface $container) {
+                return new Settings($container->get('settings'));
+            },
+            'settings' => function() use ($settings) {
+                return $settings;
+            }
+        );
+
+        $this->containerBuilder->addDefinitions($defs);
     }
 
-    private function loadDefinitions(ContainerBuilder $containerBuilder)
+    private function loadDefinitions()
     {
         $definitions = $this->appDir . '/app/definitions.php';
         if (file_exists($definitions)) {
             $func = require_once $definitions;
-            $func($containerBuilder);
+            $func($this->containerBuilder);
         } else {
             throw new Exception($definitions . " is required.");
         }
