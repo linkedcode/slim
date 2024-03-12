@@ -65,7 +65,7 @@ class Application
                 return new Settings($container->get('settings'));
             },
             'settings' => function() use ($settings) {
-                return $settings;
+                return require_once $settings;
             }
         );
 
