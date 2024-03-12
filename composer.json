@@ -4,5 +4,8 @@
         "psr-4": {
             "Linkedcode\\Slim\\": "src/"
         }
+    },
+    "require": {
+        "slim/slim": "^4.13"
     }
 }
