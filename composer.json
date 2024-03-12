@@ -6,7 +6,6 @@
         }
     },
     "require": {
-        "psr/http-message": "^1.6",
         "slim/slim": "^4.13"
     }
 }
