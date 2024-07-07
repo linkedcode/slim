@@ -2,7 +2,7 @@
 
 namespace Linkedcode\Slim\Middleware;
 
-use Linkedcode\Slim\ValidationException;
+use Linkedcode\Slim\Exception\ValidationException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

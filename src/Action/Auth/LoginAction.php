@@ -2,7 +2,7 @@
 
 namespace Linkedcode\Slim\Action\Auth;
 
-use PDO;
+use App\Infrastructure\Persistence\UserRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Exception;
@@ -11,7 +11,7 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Key\LocalFileReference;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Token;
-use Linkedcode\Slim\Service\Settings;
+use Linkedcode\Slim\Settings;
 
 class LoginAction 
 {
@@ -19,11 +19,11 @@ class LoginAction
 
     const ACCESS_TOKEN_URL = "auth/token";
 
-    private $pdo;
+    private UserRepository $userRepository;
 
-    public function __construct(PDO $pdo, Settings $settings)
+    public function __construct(UserRepository $userRepository, Settings $settings)
     {
-        $this->pdo = $pdo;
+        $this->userRepository = $userRepository;
         $this->settings = $settings;
     }
 
@@ -58,10 +58,12 @@ class LoginAction
      */
     protected function parseToken($jwt) : Token
     {
+        $key = $this->settings->getPublicKey();
+
         $config = Configuration::forAsymmetricSigner(
             new Sha256(),
-            InMemory::plainText(''),
-            LocalFileReference::file(BASE_DIR . '/config/public.key'),
+            InMemory::file($key),
+            InMemory::base64Encoded('mBC5v1sOKVvbdEitdSBenu59nfNfhwkedkJVNabosTw=')
         );
 
         $arr = json_decode($jwt);
@@ -74,26 +76,12 @@ class LoginAction
         try {
             $token = $this->parseToken($accessToken);
             $claims = $token->claims();
-            $lenght = 16;
-            $bytes = openssl_random_pseudo_bytes(ceil($lenght / 2));
-
-            $sql = "SELECT * FROM user WHERE id = :id";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(array(
-                "id" => $claims->get('sub')
-            ));
-            
-            if ($stmt->fetch()) {
+            $id = (int) $claims->get('sub');
+            $user = $this->userRepository->find($id);
+            if (!$user) {
+                $this->userRepository->createUserFromId($id);
                 return true;
             }
-
-            $sql = "INSERT INTO user (id, name) VALUES (:id, :name)";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(array(
-                "id" => $claims->get('sub'),
-                'name' => substr(bin2hex($bytes), 0, $lenght)
-            ));
-            return true;
         } catch (Exception $e) {
             $this->createUser($accessToken);
         }

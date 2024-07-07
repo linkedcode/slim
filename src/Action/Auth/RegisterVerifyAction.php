@@ -2,12 +2,11 @@
 
 namespace Linkedcode\Slim\Action\Auth;
 
-use Linkedcode\Slim\Service\Settings;
-use PDO;
+use Linkedcode\Slim\Settings;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-class VerifyAction
+class RegisterVerifyAction
 {
     use CommonTrait;
 

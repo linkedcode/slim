@@ -32,13 +32,15 @@ class Application
         $this->loadRoutes();
 
         $this->app->run();
+
+        return $this->app;
     }
 
     private function loadRoutes()
     {
         $routes = $this->appDir . '/app/routes.php';
         if (file_exists($routes)) {
-            $func = require_once $routes;
+            $func = require $routes;
             $func($this->app);
         }
     }
@@ -47,7 +49,7 @@ class Application
     {
         $middleware = $this->appDir . '/app/middleware.php';
         if (file_exists($middleware)) {
-            $func = require_once $middleware;
+            $func = require $middleware;
             $func($this->app);
         }
     }
@@ -62,10 +64,10 @@ class Application
 
         $defs = array(
             Settings::class => function(ContainerInterface $container) {
-                return new Settings($container->get('settings'));
+                return new Settings($container->get('settings'), $this->appDir);
             },
             'settings' => function() use ($settings) {
-                return require_once $settings;
+                return require $settings;
             }
         );
 
@@ -76,13 +78,10 @@ class Application
     {
         $definitions = $this->appDir . '/app/definitions.php';
         if (file_exists($definitions)) {
-            $func = require_once $definitions;
+            $func = require $definitions;
             $func($this->containerBuilder);
         } else {
             throw new Exception($definitions . " is required.");
         }
-
-        //$db = require __DIR__ . '/../app/db.php';
-        //$db($containerBuilder);
     }
 }

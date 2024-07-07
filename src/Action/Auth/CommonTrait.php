@@ -2,13 +2,13 @@
 
 namespace Linkedcode\Slim\Action\Auth;
 
-use Linkedcode\Slim\Service\Settings;
+use Linkedcode\Slim\Settings;
 
 trait CommonTrait
 {
     protected $curlInfo;
 
-    protected $settings;
+    protected Settings $settings;
 
     protected function getAuthUrl($path)
     {

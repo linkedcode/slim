@@ -1,6 +1,6 @@
 <?php
 
-namespace Linkedcode\Slim;
+namespace Linkedcode\Slim\Exception;
 
 use DomainException;
 use JsonSerializable;

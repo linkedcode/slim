@@ -2,7 +2,7 @@
 
 namespace Linkedcode\Slim\Action\Auth;
 
-use Linkedcode\Slim\Service\Settings;
+use Linkedcode\Slim\Settings;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
