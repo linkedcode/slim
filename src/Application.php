@@ -30,6 +30,7 @@ class Application
 
         $this->loadMiddlewares();
         $this->loadRoutes();
+        $this->loadListeners($container);
 
         $this->app->run();
 
@@ -42,6 +43,15 @@ class Application
         if (file_exists($routes)) {
             $func = require $routes;
             $func($this->app);
+        }
+    }
+
+    private function loadListeners(ContainerInterface $container)
+    {
+        $listeners = $this->appDir . '/app/listeners.php';
+        if (file_exists($listeners)) {
+            $func = require $listeners;
+            $func($container);
         }
     }
 

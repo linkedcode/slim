@@ -8,6 +8,7 @@ use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key\LocalFileReference;
 use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Token\InvalidTokenStructure;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -19,6 +20,13 @@ class JwtMiddleware implements MiddlewareInterface
 {
     protected $fake = false;
 
+    private string $configDir;
+
+    public function __construct($configDir)
+    {
+        $this->configDir = $configDir;
+    }
+
     public function setFake($bool)
     {
         $this->fake = $bool;
@@ -27,7 +35,7 @@ class JwtMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandler $handler): ResponseInterface
     {
         if ($this->fake) {
-            $request = $request->withAttribute('uid', 1);
+            $request = $request->withAttribute('uid', 100);
             return $handler->handle($request);
         }
 
@@ -38,11 +46,16 @@ class JwtMiddleware implements MiddlewareInterface
             throw new HttpUnauthorizedException($request);
         }
         
-        $file = BASE_DIR . '/config/enforos.public.key';
-        $config = Configuration::forAsymmetricSigner(
+        $file = $this->configDir . '/config/public.key';
+        /*$config = Configuration::forAsymmetricSigner(
             new Signer\Rsa\Sha256(),
             InMemory::plainText(''),
             LocalFileReference::file($file),
+        );*/
+        $config = Configuration::forAsymmetricSigner(
+            new Sha256(),
+            InMemory::file($file),
+            InMemory::base64Encoded('mBC5v1sOKVvbdEitdSBenu59nfNfhwkedkJVNabosTw=')
         );
         
         try {
