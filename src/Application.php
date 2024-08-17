@@ -6,12 +6,17 @@ use DI\ContainerBuilder;
 use Exception;
 use Psr\Container\ContainerInterface;
 use Slim\App;
+use Slim\Factory\AppFactory;
 
 class Application
 {
     private App $app;
     private string $appDir;
     private ContainerBuilder $containerBuilder;
+    private readonly string $environment;
+
+    private const ENV_DEV = 'development';
+    private const ENV_PROD = 'production';
 
     public function __construct(string $appDir)
     {
@@ -66,18 +71,30 @@ class Application
 
     private function loadSettings()
     {
-        $settings = $this->appDir . '/config/settings.php';
-        
-        if (!file_exists($settings)) {
-            return;
-        }
+        $file = $this->appDir . '/config/settings.php';
+        $base = require $file;
 
+        $fileProd = $this->appDir . '/config/settings.prod.php';
+        if (file_exists($fileProd)) {
+            $settingsProd = require_once $fileProd;
+            $settings = array_merge($base, $settingsProd);
+            $this->environment = self::ENV_PROD;
+        } else {
+            ini_set('display_errors', 1);
+            $fileDev = $this->appDir . '/config/settings.dev.php';
+            if (file_exists($fileDev)) {
+                $settingsDev = require_once $fileDev;
+                $settings = array_merge($base, $settingsDev);
+                $this->environment = self::ENV_DEV;
+            }
+        }
+        
         $defs = array(
             Settings::class => function(ContainerInterface $container) {
                 return new Settings($container->get('settings'), $this->appDir);
             },
             'settings' => function() use ($settings) {
-                return require $settings;
+                return $settings;
             }
         );
 
@@ -86,12 +103,19 @@ class Application
 
     private function loadDefinitions()
     {
-        $definitions = $this->appDir . '/app/definitions.php';
-        if (file_exists($definitions)) {
-            $func = require $definitions;
-            $func($this->containerBuilder);
+        $this->containerBuilder->addDefinitions([
+            App::class => function (ContainerInterface $container) {
+                return AppFactory::createFromContainer($container);
+            }
+        ]);
+
+        $file = $this->appDir . '/app/definitions.php';
+
+        if (file_exists($file)) {
+            $definitions = require $file;
+            $this->containerBuilder->addDefinitions($definitions);
         } else {
-            throw new Exception($definitions . " is required.");
+            //throw new Exception($file . " is required.");
         }
     }
 }
