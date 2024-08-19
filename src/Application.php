@@ -4,8 +4,13 @@ namespace Linkedcode\Slim;
 
 use DI\ContainerBuilder;
 use Exception;
+use Linkedcode\Slim\Middleware\JwtMiddleware;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Slim\App;
+use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
 
 class Application
@@ -15,6 +20,8 @@ class Application
     private ContainerBuilder $containerBuilder;
     private readonly string $environment;
 
+    private JwtMiddleware $jwtMiddleware;
+
     private const ENV_DEV = 'development';
     private const ENV_PROD = 'production';
 
@@ -22,13 +29,13 @@ class Application
     {
         $this->appDir = $appDir;
         $this->containerBuilder = new ContainerBuilder();
-
-        $this->loadDefinitions();
-        $this->loadSettings();
     }
 
     public function run()
     {
+        $this->loadDefinitions();
+        $this->loadSettings();
+
         $container = $this->containerBuilder->build();
 
         $this->app = $container->get(App::class);
@@ -47,8 +54,16 @@ class Application
         $routes = $this->appDir . '/app/routes.php';
         if (file_exists($routes)) {
             $func = require $routes;
-            $func($this->app);
+            $func($this->app, $this->jwtMiddleware);
         }
+
+        /**
+         * Catch-all route to serve a 404 Not Found page if none of the routes match
+         * NOTE: make sure this route is defined last
+         */
+        $this->app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function ($request, $response) {
+            throw new HttpNotFoundException($request);
+        });
     }
 
     private function loadListeners(ContainerInterface $container)
@@ -67,6 +82,10 @@ class Application
             $func = require $middleware;
             $func($this->app);
         }
+
+        $this->addCorsMiddleware($this->app);
+        $this->addJwtMiddleware($this->appDir);
+
     }
 
     private function loadSettings()
@@ -117,5 +136,34 @@ class Application
         } else {
             //throw new Exception($file . " is required.");
         }
+    }
+
+    private function addCorsMiddleware(App $app)
+    {
+        $app->add(
+            function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($app): ResponseInterface {
+                if ($request->getMethod() === 'OPTIONS') {
+                    $response = $app->getResponseFactory()->createResponse();
+                } else {
+                    $response = $handler->handle($request);
+                }
+
+                $response = $response
+                    ->withHeader('Access-Control-Allow-Credentials', 'true')
+                    ->withHeader('Access-Control-Allow-Origin', '*')
+                    ->withHeader('Access-Control-Allow-Headers', '*')
+                    ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+                    ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+                    ->withHeader('Pragma', 'no-cache');
+
+                return $response;
+            }
+        );
+    }
+
+    private function addJwtMiddleware(string $dir)
+    {
+        $this->jwtMiddleware = new JwtMiddleware($dir);
+        //$this->jwtMiddleware->setFake(100);
     }
 }
