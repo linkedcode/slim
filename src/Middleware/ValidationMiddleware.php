@@ -16,22 +16,11 @@ final class ValidationMiddleware implements MiddlewareInterface
         try {
             return $handler->handle($request);
         } catch (ValidationException $e) {
-            $invalidParams = [];
-
-            foreach ($e->getErrors() as $key => $messages) {
-                foreach ($messages as $message) {
-                    $invalidParams[] = array(
-                        'name' => $key,
-                        'reason' => $message
-                    );
-                }
-            }
-
             $response = new Response();
             $response->getBody()->write(json_encode(array(
                 'title' => $e->getMessage(),
                 'status' => intval($e->getCode()),
-                "invalid-params" => $invalidParams
+                "invalid-params" => $e->getErrors()
             )));
 
             return $response
