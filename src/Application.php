@@ -18,12 +18,7 @@ class Application
     private App $app;
     private string $appDir;
     private ContainerBuilder $containerBuilder;
-    private readonly string $environment;
-
     private JwtMiddleware $jwtMiddleware;
-
-    private const ENV_DEV = 'development';
-    private const ENV_PROD = 'production';
 
     public function __construct(string $appDir)
     {
@@ -43,6 +38,7 @@ class Application
         $this->loadMiddlewares();
         $this->loadRoutes();
         $this->loadListeners($container);
+        $this->loadSubscribers($container);
 
         $this->app->run();
 
@@ -75,6 +71,15 @@ class Application
         }
     }
 
+    private function loadSubscribers(ContainerInterface $container)
+    {
+        $subscribers = $this->appDir . '/app/subscribers.php';
+        if (file_exists($subscribers)) {
+            $func = require $subscribers;
+            $func($container);
+        }
+    }
+
     private function loadMiddlewares()
     {
         $middleware = $this->appDir . '/app/middleware.php';
@@ -85,7 +90,6 @@ class Application
 
         $this->addCorsMiddleware($this->app);
         $this->addJwtMiddleware($this->appDir);
-
     }
 
     private function loadSettings()
@@ -96,15 +100,13 @@ class Application
         $fileProd = $this->appDir . '/config/settings.prod.php';
         if (file_exists($fileProd)) {
             $settingsProd = require_once $fileProd;
-            $settings = array_merge($base, $settingsProd);
-            $this->environment = self::ENV_PROD;
+            $settings = array_merge_recursive($base, $settingsProd);
         } else {
             ini_set('display_errors', 1);
             $fileDev = $this->appDir . '/config/settings.dev.php';
             if (file_exists($fileDev)) {
                 $settingsDev = require_once $fileDev;
-                $settings = array_merge($base, $settingsDev);
-                $this->environment = self::ENV_DEV;
+                $settings = array_merge_recursive($base, $settingsDev);
             }
         }
         
@@ -164,6 +166,5 @@ class Application
     private function addJwtMiddleware(string $dir)
     {
         $this->jwtMiddleware = new JwtMiddleware($dir);
-        //$this->jwtMiddleware->setFake(100);
     }
 }

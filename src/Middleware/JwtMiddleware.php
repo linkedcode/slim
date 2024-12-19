@@ -66,7 +66,7 @@ class JwtMiddleware implements MiddlewareInterface
             throw $e;
         }
 
-        $uid = $token->claims()->get('sub');
+        $uid = (int) $token->claims()->get('sub');
         $request = $request->withAttribute('uid', $uid);
         $request = $request->withAttribute('user_id', $uid);
 

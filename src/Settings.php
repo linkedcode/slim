@@ -21,6 +21,14 @@ class Settings
             return $this->settings[$name];
         }
 
+        if (stripos($name, '.')) {
+            $p = explode('.', $name);
+
+            if (isset($this->settings[$p[0]][$p[1]])) {
+                return $this->settings[$p[0]][$p[1]];
+            }
+        }
+
         throw new Exception("No existe configuracion [{$name}]");
     }
 

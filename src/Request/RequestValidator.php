@@ -12,7 +12,9 @@ class RequestValidator
     protected const REQUIRED = 'required';
     protected const MAXIMUM = 'maximum';
     protected const MINIMUM = 'minimum';
+    protected const IN = 'in';
     protected const TYPE = 'type';
+    protected const OPTIONAL = 'optional';
 
     protected const TYPE_STRING = 'string';
     protected const TYPE_INTEGER = 'integer';
@@ -52,6 +54,15 @@ class RequestValidator
                 case self::MAX_LENGTH:
                     $this->validateMaxLength($field, $value, $ruleValue);
                     break;
+                case self::MINIMUM:
+                    $this->validateMinimum($field, $value, $ruleValue);
+                    break;
+                case self::MAXIMUM:
+                    $this->validateMaximum($field, $value, $ruleValue);
+                    break;
+                case self::IN:
+                    $this->validateIn($field, $value, $ruleValue);
+                    break;
                 case self::TYPE:
                     $value = $this->validateType($field, $value, $ruleValue);
                     break;
@@ -81,10 +92,47 @@ class RequestValidator
         return $value;
     }
 
+    private function validateMinimum(string $field, mixed $value, int $minimum): mixed
+    {
+        if (intval($value) < $minimum) {
+            $this->addInvalidParam($field, "El valor mínimo es de {$minimum}.");
+        }
+
+        return $value;
+    }
+
+    private function validateMaximum(string $field, mixed $value, int $maximum): mixed
+    {
+        if (intval($value) > $maximum) {
+            $this->addInvalidParam($field, "El valor máximo es de {$maximum}.");
+        }
+
+        return $value;
+    }
+
     private function validateMaxLength(string $field, mixed $value, int $maxLength): mixed
     {
         if (strlen($value) > $maxLength) {
             $this->addInvalidParam($field, "La longitud máxima es de {$maxLength} caracteres.");
+        }
+
+        return $value;
+    }
+
+    private function validateIn(string $field, string $value, array $validValues): mixed
+    {
+        $validValuesKeys = array_keys($validValues);
+        $validValuesNames = array_values($validValues);
+
+        foreach ($validValuesKeys as &$validValue) {
+            $validValue = strtolower($validValue);
+        }
+
+        $value = strtolower($value);
+
+        if (!in_array($value, $validValuesKeys)) {
+            $msg = "El valor '{$value}' no es valido. Valores válidos: " . implode(", ", $validValuesNames);
+            $this->addInvalidParam($field, $msg);
         }
 
         return $value;

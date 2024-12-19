@@ -8,37 +8,41 @@ use Psr\Http\Message\UploadedFileInterface;
 
 class UploadService
 {
-    //protected ListingRepository $entityRepo;
-    
-    //protected ListingImageRepository $imageRepo;
-
     private Settings $settings;
 
     public function __construct(Settings $settings)
     {
-        //$this->entityRepo = $listingRepo;
-        //$this->imageRepo = $imageRepo;
         $this->settings = $settings;
     }
 
     protected function createDirs(UploadedFileInterface $file, int $entityId)
     {
-        $path = $this->settings->get('uploadPath');
+        $path = $this->settings->get('upload.path');
         $full = null;
 
+        $type = $file->getClientMediaType();
+
+        switch ($type) {
+            case 'image/webp':
+                $ext = 'webp';
+                break;
+            case 'image/jpeg':
+                $ext = 'jpg';
+                break;
+            case 'image/gif':
+                $ext = 'gif';
+                break;
+            case 'image/png':
+                $ext = 'png';
+                break;
+            default:
+                throw new Exception("Invalid type: {$type}");
+        }
+
         do {
-            $md5 = md5($entityId . time());
+            $md5 = md5($entityId . time() . random_bytes(10));
             $dir = sprintf("%'.09d", $entityId);
             $dirs = str_split($dir, 3);
-            $type = $file->getClientMediaType();
-            
-            switch ($type) {
-                case 'image/jpeg':
-                    $ext = 'jpg';
-                    break;
-                default:
-                    throw new Exception("Invalid type: {$type}");
-            }
 
             $fulldir = $path . implode("/", $dirs) . "/";
             $full = $fulldir . substr($md5, 0, 8) . "." . $ext;
@@ -52,33 +56,52 @@ class UploadService
         return $full;
     }
 
-    /**
-     * @return string Path relativo del archivo original.
-     */
-    public function upload(UploadedFileInterface $file, int $entityId): string
+    public function upload(UploadedFileInterface $file, int $entityId): string|bool
     {
-        $path = $this->settings->get('uploadPath');
-        $full = $this->createDirs($file, $entityId);
-
         try {
+            $path = $this->settings->get('upload.path');
+            $full = $this->createDirs($file, $entityId);
+
             $file->moveTo($full);
+
+            if ($this->checkMinSize($full) === false) {
+                return false;
+            }
+
+            $full = $this->createWebpVersion($full);
+
+            $this->checkMaxSize($full);
+
+            $this->createVersions($full);
+
             $relPath = str_replace($path, "", $full);
-
-            $this->createVersion($full, 300, 225);
-            $this->createVersion($full, 90, 90);
+            return $relPath;
         } catch (Exception $e) {
-
+            throw new Exception($e->getMessage());
         }
-
-        return $relPath;
     }
 
-    public function getFilenameVersion($file, $version)
+    private function createVersions(string $filename)
+    {
+        $versions = $this->settings->get('upload.versions');
+
+        foreach ($versions as $version) {
+            $ver = explode("x", $version);
+            $w = (int) $ver[0];
+            $h = (int) $ver[1];
+            $filenameVersion = $this->getFilenameVersion($filename, $version);
+            $this->createVersion($filename, $filenameVersion, $w, $h);
+        }
+    }
+
+    public function getFilenameVersion(string $file, string $version)
     {
         $original = ".orig.";
 
         if (stripos($file, $original) !== false) {
             $filename = str_replace($original, ".{$version}.", $file);
+            $pathinfo = pathinfo($filename);
+            $filename = $pathinfo['dirname'] . "/" . $pathinfo['filename'] . '.webp';
         } else {
             $pathinfo = pathinfo($file);
             $filename = $pathinfo['dirname'] . "/" . $pathinfo['filename'] . ".{$version}." . $pathinfo['extension'];
@@ -87,41 +110,141 @@ class UploadService
         return $filename;
     }
 
-    protected function createVersion(string $file, int $thumb_width, int $thumb_height)
+    private function isAlpha(string $filename): bool
     {
-        $image = imagecreatefromjpeg($file);
-        $filename = $this->getFilenameVersion($file, "{$thumb_width}x{$thumb_height}");
+        $info = getimagesize($filename);
+
+        switch ($info['mime']) {
+            case 'image/gif':
+            case 'image/png':
+                return true;
+        }
+
+        return false;
+    }
+
+    protected function createVersion(string $source, string $target, int $thumbWidth, int $thumbHeight): bool
+    {
+        $image = $this->createImageFromFile($source);
 
         $width = imagesx($image);
         $height = imagesy($image);
 
-        $original_aspect = $width / $height;
-        $thumb_aspect = $thumb_width / $thumb_height;
+        $originalAspect = $width / $height;
+        $thumbAspect = $thumbWidth / $thumbHeight;
 
-        if ( $original_aspect >= $thumb_aspect ) {
+        if ($originalAspect >= $thumbAspect) {
             // If image is wider than thumbnail (in aspect ratio sense)
-            $new_height = $thumb_height;
-            $new_width = $width / ($height / $thumb_height);
+            $newHeight = $thumbHeight;
+            $newWidth = $width / ($height / $thumbHeight);
         } else {
             // If the thumbnail is wider than the image
-            $new_width = $thumb_width;
-            $new_height = $height / ($width / $thumb_width);
+            $newWidth = $thumbWidth;
+            $newHeight = $height / ($width / $thumbWidth);
         }
 
-        $thumb = imagecreatetruecolor( $thumb_width, $thumb_height );
+        if ($this->isAlpha($source)) {
+            imagepalettetotruecolor($image);
+            imagealphablending($image, true);
+            imagesavealpha($image, true);
+        }
+
+        $thumb = imagecreatetruecolor($thumbWidth, $thumbHeight);
 
         // Resize and crop
         imagecopyresampled($thumb,
             $image,
-            0 - ($new_width - $thumb_width) / 2, // Center the image horizontally
-            0 - ($new_height - $thumb_height) / 2, // Center the image vertically
+            0 - ($newWidth - $thumbWidth) / 2, // Center the image horizontally
+            0 - ($newHeight - $thumbHeight) / 2, // Center the image vertically
             0, 0,
-            $new_width, $new_height,
+            $newWidth, $newHeight,
             $width, $height
         );
-        
-        imagejpeg($thumb, $filename, 80);
 
-        return $filename;
+        imagewebp($thumb, $target, 90);
+
+        return true;
+    }
+
+    private function checkMaxSize(string $filename)
+    {
+        $image = $this->createImageFromFile($filename);
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        $maxWidth = $this->settings->get('upload.maxWidth');
+        $maxHeight = $this->settings->get('upload.maxHeight');
+
+        if ($width > $maxWidth || $height > $maxHeight) {
+            $this->createVersion($filename, $filename, $maxWidth, $maxHeight);
+        }
+    }
+
+    private function checkMinSize(string $filename): bool
+    {
+        $image = $this->createImageFromFile($filename);
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        $minWidth = $this->settings->get('upload.minWidth');
+        $minHeight = $this->settings->get('upload.minHeight');
+
+        if ($width < $minWidth || $height < $minHeight) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function isWebp(string $filename): bool
+    {
+        $info = getimagesize($filename);
+        return ('image/webp' === $info['mime']);
+    }
+
+    private function createWebpVersion(string $filename): string
+    {
+        if ($this->isWebp($filename)) {
+            return $filename;
+        }
+
+        $image = $this->createImageFromFile($filename);
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        $pathinfo = pathinfo($filename);
+        $newname = $pathinfo['dirname'] . '/' . $pathinfo['filename'] . '.webp';
+
+        $this->createVersion($filename, $newname, $width, $height);
+
+        unlink($filename);
+        return $newname;
+    }
+
+    private function createImageFromFile(string $filename)
+    {
+        $info = getimagesize($filename);
+
+        switch ($info['mime']) {
+            case 'image/jpeg':
+                $image = imagecreatefromjpeg($filename);
+                break;
+            case 'image/png':
+                $image = imagecreatefrompng($filename);
+                break;
+            case 'image/webp':
+                $image = imagecreatefromwebp($filename);
+                break;
+            case 'image/gif':
+                $image = imagecreatefromgif($filename);
+                break;
+            default:
+                throw new Exception("Imagen '{$info['mime']}' no permitida");
+        }
+
+        return $image;
     }
 }
