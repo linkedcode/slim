@@ -124,6 +124,11 @@ class Application
         $this->containerBuilder->addDefinitions($defs);
     }
 
+    public function addDefinitions(array $definitions): void
+    {
+        $this->containerBuilder->addDefinitions($definitions);
+    }
+
     private function loadDefinitions()
     {
         $this->containerBuilder->addDefinitions([
