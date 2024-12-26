@@ -47,10 +47,13 @@ class Application
 
     private function loadRoutes()
     {
-        $routes = $this->appDir . '/app/routes.php';
-        if (file_exists($routes)) {
-            $func = require $routes;
+        $file = $this->appDir . '/app/routes.php';
+
+        if (file_exists($file)) {
+            $func = require $file;
             $func($this->app, $this->jwtMiddleware);
+        } else {
+            throw new Exception($file . " is required.");
         }
 
         /**
@@ -102,7 +105,6 @@ class Application
             $settingsProd = require_once $fileProd;
             $settings = array_merge_recursive($base, $settingsProd);
         } else {
-            ini_set('display_errors', 1);
             $fileDev = $this->appDir . '/config/settings.dev.php';
             if (file_exists($fileDev)) {
                 $settingsDev = require_once $fileDev;
@@ -136,7 +138,7 @@ class Application
             $definitions = require $file;
             $this->containerBuilder->addDefinitions($definitions);
         } else {
-            //throw new Exception($file . " is required.");
+            throw new Exception($file . " is required.");
         }
     }
 
