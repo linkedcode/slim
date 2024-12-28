@@ -14,7 +14,6 @@ class LoginAction
 
     public function __construct(Settings $settings)
     {
-        $this->userRepository = $userRepository;
         $this->settings = $settings;
     }
 
