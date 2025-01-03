@@ -1,11 +1,12 @@
 {
-    "name": "linkedcode/slim",
-    "autoload": {
-        "psr-4": {
-            "Linkedcode\\Slim\\": "src/"
-        }
-    },
-    "require": {
-        "slim/slim": "^4.13"
+  "name": "linkedcode/slim",
+  "autoload": {
+    "psr-4": {
+      "Linkedcode\\Slim\\": "src/"
     }
+  },
+  "require": {
+    "slim/slim": "^4.13",
+    "lcobucci/jwt": "^5.3"
+  }
 }
