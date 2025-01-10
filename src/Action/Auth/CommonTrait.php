@@ -2,6 +2,11 @@
 
 namespace Linkedcode\Slim\Action\Auth;
 
+use Exception;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Signer\Rsa\Sha256;
+use Lcobucci\JWT\Token;
 use Linkedcode\Slim\Settings;
 
 trait CommonTrait
@@ -60,6 +65,36 @@ trait CommonTrait
         if (stripos($url, '.local')) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        }
+    }
+
+    private function parseToken(string $jwt): Token
+    {
+        $key = $this->settings->getPublicKey();
+
+        $config = Configuration::forAsymmetricSigner(
+            new Sha256(),
+            InMemory::file($key),
+            InMemory::base64Encoded('mBC5v1sOKVvbdEitdSBenu59nfNfhwkedkJVNabosTw=')
+        );
+
+        $arr = json_decode($jwt);
+        $token = $config->parser()->parse($arr->access_token);
+        return $token;
+    }
+
+    private function createUser(Token $token): bool
+    {
+        try {
+            $claims = $token->claims();
+            $id = (int) $claims->get('sub');
+            $user = $this->userRepository->find($id);
+            if (!$user) {
+                $this->userRepository->createUserFromId($id);
+                return true;
+            }
+        } catch (Exception $e) {
+            $this->createUser($token);
         }
     }
 }
