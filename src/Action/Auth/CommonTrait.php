@@ -91,8 +91,8 @@ trait CommonTrait
             $user = $this->userRepository->find($id);
             if (!$user) {
                 $this->userRepository->createUserFromId($id);
-                return true;
             }
+            return true;
         } catch (Exception $e) {
             $this->createUser($token);
         }
