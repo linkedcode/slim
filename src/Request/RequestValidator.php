@@ -4,6 +4,8 @@ namespace Linkedcode\Slim\Request;
 
 use Exception;
 use Linkedcode\Slim\Exception\ValidationException;
+use Linkedcode\Slim\ProblemJson\ApiProblem;
+use Linkedcode\Slim\ProblemJson\ApiProblemException;
 
 class RequestValidator
 {
@@ -26,13 +28,32 @@ class RequestValidator
 
     public function validate(array $data): array
     {
-        foreach ($this->rules as $field => $fieldRules) {
+        $this->conditionalRules($data);
+
+        foreach ($this->getRules() as $field => $fieldRules) {
+            if (isset($fieldRules[self::OPTIONAL])) {
+                // Si es opcional y no hay valor, lo dejamos seguir,
+                // pero si hay valor lo validamos normalmente.
+                if (!isset($data[$field]) || is_null($data[$field])) {
+                    continue;
+                }
+            }
+
             $data[$field] = $this->validateField($field, $fieldRules, $data);
         }
 
         $this->checkViolations();
 
         return $data;
+    }
+
+    protected function conditionalRules(array $data): void
+    {
+    }
+
+    protected function getRules(): array
+    {
+        return $this->rules;
     }
 
     private function validateField(string $field, array $rules, array $data)
@@ -160,7 +181,11 @@ class RequestValidator
     private function checkViolations()
     {
         if (false === empty($this->invalidParams)) {
-            throw new ValidationException("Errores de validacion", $this->invalidParams);
+            $apiProblem = new ApiProblem("Errores de validacion", 422);
+            $apiProblem->setErrors($this->invalidParams);
+            
+            throw new ApiProblemException($apiProblem);
+            //throw new ValidationException("Errores de validacion", $this->invalidParams);
         }
     }
 
