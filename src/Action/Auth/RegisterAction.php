@@ -23,10 +23,8 @@ class RegisterAction
 
         $body = $request->getParsedBody();
         $body['username'] = $body['email'];
-        $body['grant_type'] = 'password';
-        $body['client_id'] = '1';
-        $body['client_secret'] = 'secret';
-        $body['scope'] = 'all';
+
+        $body = array_merge($body, $this->settings->get('oauth.app'));
 
         $headers = array(
             'Authorization: Bearer ' . $token

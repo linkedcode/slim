@@ -37,15 +37,14 @@ class RegisterVerifyAction
 
         if ($this->curlInfo['http_code'] == "200") {
             $body['username'] = $body['email'];
-            $body['grant_type'] = 'password';
-            $body['client_id'] = '1';
-            $body['client_secret'] = 'secret';
-    
+            
+            $body = array_merge($body, $this->settings->get('oauth.app'));
+            
             $res = $this->post($this->getAuthUrl("auth/token"), $body, $headers);
 
             $token = $this->parseToken($res);
             if ($token instanceof Token) {
-                $this->createUser($res);
+                $this->createUser($token);
             }
     
             $response->getBody()->write($res);

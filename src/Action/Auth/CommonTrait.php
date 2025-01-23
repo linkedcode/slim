@@ -7,6 +7,8 @@ use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Token;
+use Linkedcode\Slim\ProblemJson\ApiProblem;
+use Linkedcode\Slim\ProblemJson\ApiProblemException;
 use Linkedcode\Slim\Settings;
 
 trait CommonTrait
@@ -25,17 +27,17 @@ trait CommonTrait
     {
         $url = $this->getAuthUrl("token");
 
-        $body = [
-            'grant_type' => 'client_credentials',
-            'client_id' => '2',
-            'client_secret' => 'secret',
-            'scope' => 'all'
-        ];
+        $body = $this->settings->get('oauth.auth');
 
         $json = $this->post($url, $body);
-        $arr = json_decode($json);
 
-        return $arr->access_token;
+        if ($this->curlInfo['http_code'] == 200) {
+            $arr = json_decode($json);
+            return $arr->access_token;
+        } else {
+            $apiProblem = ApiProblem::fromApiProblem($json);
+            throw new ApiProblemException($apiProblem);
+        }
     }
 
     protected function post(string $url, array $body, array $headers = array())

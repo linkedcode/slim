@@ -5,8 +5,6 @@ namespace Linkedcode\Slim\Middleware;
 use Exception;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Lcobucci\JWT\Configuration;
-use Lcobucci\JWT\Signer;
-use Lcobucci\JWT\Signer\Key\LocalFileReference;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Token\InvalidTokenStructure;
@@ -46,15 +44,9 @@ class JwtMiddleware implements MiddlewareInterface
             throw new HttpUnauthorizedException($request);
         }
         
-        $file = $this->configDir . '/config/public.key';
-        /*$config = Configuration::forAsymmetricSigner(
-            new Signer\Rsa\Sha256(),
-            InMemory::plainText(''),
-            LocalFileReference::file($file),
-        );*/
         $config = Configuration::forAsymmetricSigner(
             new Sha256(),
-            InMemory::file($file),
+            InMemory::file($this->configDir . '/config/public.key'),
             InMemory::base64Encoded('mBC5v1sOKVvbdEitdSBenu59nfNfhwkedkJVNabosTw=')
         );
         

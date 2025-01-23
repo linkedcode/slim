@@ -9,6 +9,7 @@ class ApiProblem
     private array $errors = [];
     private string $instance = '';
     private string $type = '';
+    private string $detail = '';
 
     public function __construct(string $title, int $statusCode)
     {
@@ -57,7 +58,7 @@ class ApiProblem
             $data['invalid-params'] = $this->errors;
         }
 
-        $vars = array('instance', 'type');
+        $vars = array('instance', 'type', 'detail');
 
         foreach ($vars as $var) {
             if (!empty($this->$var)) {
@@ -66,5 +67,22 @@ class ApiProblem
         }
 
         return json_encode($data);
+    }
+
+    public static function fromApiProblem(string $json): static
+    {
+        $body = json_decode($json, true);
+
+        $apiProblem = new static($body['title'], $body['status']);
+
+        unset($body['title'], $body['status']);
+        
+        foreach ($body as $k => $v) {
+            if (property_exists($apiProblem, $k) && !empty($v)) {
+                $apiProblem->$k = $v;
+            }
+        }
+
+        return $apiProblem;
     }
 }

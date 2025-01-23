@@ -28,9 +28,8 @@ class LoginAction
 
         $body = $request->getParsedBody();
         $body['username'] = $body['email'];
-        $body['grant_type'] = 'password';
-        $body['client_id'] = '1';
-        $body['client_secret'] = 'secret';
+
+        $body = array_merge($body, $this->settings->get('oauth.app'));
 
         $headers = array(
             'Authorization: Bearer ' . $token
@@ -39,7 +38,6 @@ class LoginAction
         $res = $this->post($this->getAuthUrl(self::ACCESS_TOKEN_URL), $body, $headers);
 
         if ($this->curlInfo['http_code'] == "200") {
-
             $token = $this->parseToken($res);
             if ($token instanceof Token) {
                 $this->createUser($token);
