@@ -47,6 +47,11 @@ class ApiProblem
         $this->type = $type;
     }
 
+    public function setDetail(string $detail)
+    {
+        $this->detail = $detail;
+    }
+
     public function getBody(): string
     {
         $data = array(
