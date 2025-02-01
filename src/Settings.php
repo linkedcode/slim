@@ -36,4 +36,23 @@ class Settings
     {
         return $this->appDir . '/config/public.key';
     }
+
+    /**
+     * 'mysql:host=localhost;dbname=testdb';
+     */
+    
+    public function getDsn(): string
+    {
+        $db = $this->get('db');
+
+        $drivers = [
+            'pdo_mysql' => 'mysql'
+        ];
+
+        $driver = $drivers[$db['driver']];
+
+        $dsn = sprintf("%s:host=%s;dbname=%s", $driver, $db['host'], $db['dbname']);
+
+        return $dsn;
+    }
 }
