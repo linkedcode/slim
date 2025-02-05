@@ -3,12 +3,7 @@
 namespace Linkedcode\Slim;
 
 use DI\ContainerBuilder;
-use Exception;
-use Linkedcode\Slim\Middleware\JwtMiddleware;
 use Psr\Container\ContainerInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
 use Slim\App;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
@@ -18,7 +13,6 @@ class Application
     private App $app;
     private string $appDir;
     private ContainerBuilder $containerBuilder;
-    private JwtMiddleware $jwtMiddleware;
 
     public function __construct(string $appDir)
     {
@@ -45,15 +39,20 @@ class Application
         return $this->app;
     }
 
+    public function addDefinitions(array $definitions): void
+    {
+        $this->containerBuilder->addDefinitions($definitions);
+    }
+
     private function loadRoutes()
     {
         $file = $this->appDir . '/app/routes.php';
 
         if (file_exists($file)) {
             $func = require $file;
-            $func($this->app, $this->jwtMiddleware);
+            $func($this->app);
         } else {
-            throw new Exception($file . " is required.");
+            die($file . " is required.");
         }
 
         /**
@@ -86,52 +85,42 @@ class Application
     private function loadMiddlewares()
     {
         $middleware = $this->appDir . '/app/middleware.php';
+
         if (file_exists($middleware)) {
             $func = require $middleware;
             $func($this->app);
         }
-
-        $this->addCorsMiddleware($this->app);
-        $this->addJwtMiddleware($this->appDir);
     }
 
     private function loadSettings()
     {
         $file = $this->appDir . '/config/settings.php';
-        $base = require $file;
+        $settings = require $file;
 
         $fileProd = $this->appDir . '/config/settings.prod.php';
         if (file_exists($fileProd)) {
-            $settingsProd = require_once $fileProd;
-            $settings = array_merge_recursive($base, $settingsProd);
+            $prod = require_once $fileProd;
+            $settings = array_merge_recursive($settings, $prod);
         } else {
             $fileDev = $this->appDir . '/config/settings.dev.php';
             if (file_exists($fileDev)) {
-                $settingsDev = require_once $fileDev;
-                $settings = array_merge_recursive($base, $settingsDev);
+                $dev = require_once $fileDev;
+                $settings = array_merge_recursive($settings, $dev);
             }
         }
         
         $defs = array(
-            Settings::class => function(ContainerInterface $container) {
-                return new Settings($container->get('settings'), $this->appDir);
-            },
-            'settings' => function() use ($settings) {
-                return $settings;
+            Settings::class => function() use ($settings) {
+                return new Settings($settings, $this->appDir);
             }
         );
 
-        $this->containerBuilder->addDefinitions($defs);
-    }
-
-    public function addDefinitions(array $definitions): void
-    {
-        $this->containerBuilder->addDefinitions($definitions);
+        $this->addDefinitions($defs);
     }
 
     private function loadDefinitions()
     {
-        $this->containerBuilder->addDefinitions([
+        $this->addDefinitions([
             App::class => function (ContainerInterface $container) {
                 return AppFactory::createFromContainer($container);
             }
@@ -141,37 +130,7 @@ class Application
 
         if (file_exists($file)) {
             $definitions = require $file;
-            $this->containerBuilder->addDefinitions($definitions);
-        } else {
-            throw new Exception($file . " is required.");
+            $this->addDefinitions($definitions);
         }
-    }
-
-    private function addCorsMiddleware(App $app)
-    {
-        $app->add(
-            function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($app): ResponseInterface {
-                if ($request->getMethod() === 'OPTIONS') {
-                    $response = $app->getResponseFactory()->createResponse();
-                } else {
-                    $response = $handler->handle($request);
-                }
-
-                $response = $response
-                    ->withHeader('Access-Control-Allow-Credentials', 'true')
-                    ->withHeader('Access-Control-Allow-Origin', '*')
-                    ->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
-                    ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-                    ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-                    ->withHeader('Pragma', 'no-cache');
-
-                return $response;
-            }
-        );
-    }
-
-    private function addJwtMiddleware(string $dir)
-    {
-        $this->jwtMiddleware = new JwtMiddleware($dir);
     }
 }
