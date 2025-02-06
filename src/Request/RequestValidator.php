@@ -3,7 +3,6 @@
 namespace Linkedcode\Slim\Request;
 
 use Exception;
-use Linkedcode\Slim\Exception\ValidationException;
 use Linkedcode\Slim\ProblemJson\ApiProblem;
 use Linkedcode\Slim\ProblemJson\ApiProblemException;
 
@@ -185,7 +184,6 @@ class RequestValidator
             $apiProblem->setErrors($this->invalidParams);
             
             throw new ApiProblemException($apiProblem);
-            //throw new ValidationException("Errores de validacion", $this->invalidParams);
         }
     }
 
