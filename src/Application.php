@@ -123,6 +123,9 @@ class Application
         $this->addDefinitions([
             App::class => function (ContainerInterface $container) {
                 return AppFactory::createFromContainer($container);
+            },
+            'appDir' => function() {
+                return $this->appDir;
             }
         ]);
 
