@@ -3,8 +3,8 @@
 namespace Linkedcode\Slim\Request;
 
 use Exception;
-use Linkedcode\Slim\ProblemJson\ApiProblem;
-use Linkedcode\Slim\ProblemJson\ApiProblemException;
+use Linkedcode\Slim\ApiProblem\ApiProblem;
+use Linkedcode\Slim\ApiProblem\ApiProblemException;
 
 class RequestValidator
 {
@@ -180,7 +180,7 @@ class RequestValidator
     private function checkViolations()
     {
         if (false === empty($this->invalidParams)) {
-            $apiProblem = new ApiProblem("Errores de validacion", 422);
+            $apiProblem = new ApiProblem(ApiProblem::TYPE_VALIDATION_ERROR, 422);
             $apiProblem->setErrors($this->invalidParams);
             
             throw new ApiProblemException($apiProblem);

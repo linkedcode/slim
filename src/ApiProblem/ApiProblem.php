@@ -1,6 +1,6 @@
 <?php
 
-namespace Linkedcode\Slim\ProblemJson;
+namespace Linkedcode\Slim\ApiProblem;
 
 class ApiProblem
 {
@@ -11,9 +11,16 @@ class ApiProblem
     private string $type = '';
     private string $detail = '';
 
-    public function __construct(string $title, int $statusCode)
+    public const TYPE_VALIDATION_ERROR = 'validation-error';
+
+    private array $titles = [
+        self::TYPE_VALIDATION_ERROR => 'Errores de validación'
+    ];
+
+    public function __construct(string $type, int $statusCode)
     {
-        $this->title = $title;
+        $this->type = $type;
+        $this->title = $this->titles[$type];
         $this->statusCode = $statusCode;
     }
 
@@ -42,19 +49,15 @@ class ApiProblem
         $this->instance = $instance;
     }
 
-    public function setType(string $type)
-    {
-        $this->type = $type;
-    }
-
     public function setDetail(string $detail)
     {
         $this->detail = $detail;
     }
 
-    public function getBody(): string
+    public function getBody(): array
     {
         $data = array(
+            'type' => $this->getType(),
             'title' => $this->getTitle(),
             'status' => $this->getStatusCode()
         );
@@ -63,7 +66,7 @@ class ApiProblem
             $data['invalid-params'] = $this->errors;
         }
 
-        $vars = array('instance', 'type', 'detail');
+        $vars = array('instance', 'detail');
 
         foreach ($vars as $var) {
             if (!empty($this->$var)) {
@@ -71,10 +74,15 @@ class ApiProblem
             }
         }
 
-        return json_encode($data);
+        return $data;
     }
 
-    public static function fromApiProblem(string $json): static
+    private function getType(): string
+    {
+        return $this->type;
+    }
+
+    private static function fromApiProblem(string $json): static
     {
         $body = json_decode($json, true);
 
