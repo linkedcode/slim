@@ -70,7 +70,7 @@ class UploadService
 
             $full = $this->createWebpVersion($full);
 
-            $this->checkMaxSize($full);
+            $this->checkMaxSize($full, true);
 
             $this->createVersions($full);
 
@@ -166,7 +166,7 @@ class UploadService
         return true;
     }
 
-    private function checkMaxSize(string $filename)
+    private function checkMaxSize(string $filename, $proportional = false)
     {
         $image = $this->createImageFromFile($filename);
 
@@ -176,8 +176,25 @@ class UploadService
         $maxWidth = $this->settings->get('upload.maxWidth');
         $maxHeight = $this->settings->get('upload.maxHeight');
 
-        if ($width > $maxWidth || $height > $maxHeight) {
-            $this->createVersion($filename, $filename, $maxWidth, $maxHeight);
+        $originalAspect = $width / $height;
+        $maxAspect = $maxWidth / $maxHeight;
+
+        if ($proportional) {
+            if ($originalAspect >= $maxAspect) {
+                // If image is wider than thumbnail (in aspect ratio sense)
+                $newHeight = $maxHeight;
+                $newWidth = $width / ($height / $maxHeight);
+            } else {
+                // If the thumbnail is wider than the image
+                $newWidth = $maxWidth;
+                $newHeight = $height / ($width / $maxWidth);
+            }
+
+            $this->createVersion($filename, $filename, $newWidth, $newHeight);
+        } else {
+            if ($width > $maxWidth || $height > $maxHeight) {
+                $this->createVersion($filename, $filename, $maxWidth, $maxHeight);
+            }
         }
     }
 
