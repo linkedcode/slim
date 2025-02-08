@@ -4,13 +4,14 @@ namespace Linkedcode\Slim;
 
 use DI\ContainerBuilder;
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Slim\App;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
+use Slim\Psr7\Factory\ResponseFactory;
 
 class Application
 {
-    private App $app;
     private string $appDir;
     private ContainerBuilder $containerBuilder;
 
@@ -26,40 +27,33 @@ class Application
         $this->loadSettings();
 
         $container = $this->containerBuilder->build();
+        $app = $container->get(App::class);
 
-        $this->app = $container->get(App::class);
-
-        $this->loadMiddlewares();
-        $this->loadRoutes();
+        $this->loadMiddlewares($app);
+        $this->loadRoutes($app);
         $this->loadListeners($container);
         $this->loadSubscribers($container);
 
-        $this->app->run();
-
-        return $this->app;
+        $app->run();
     }
 
-    public function addDefinitions(array $definitions): void
+    private function addDefinitions(array $definitions): void
     {
         $this->containerBuilder->addDefinitions($definitions);
     }
 
-    private function loadRoutes()
+    private function loadRoutes(App $app)
     {
         $file = $this->appDir . '/app/routes.php';
 
         if (file_exists($file)) {
             $func = require $file;
-            $func($this->app);
+            $func($app);
         } else {
             die($file . " is required.");
         }
 
-        /**
-         * Catch-all route to serve a 404 Not Found page if none of the routes match
-         * NOTE: make sure this route is defined last
-         */
-        $this->app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function ($request, $response) {
+        $app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function ($request, $response) {
             throw new HttpNotFoundException($request);
         });
     }
@@ -67,6 +61,7 @@ class Application
     private function loadListeners(ContainerInterface $container)
     {
         $listeners = $this->appDir . '/app/listeners.php';
+        
         if (file_exists($listeners)) {
             $func = require $listeners;
             $func($container);
@@ -76,19 +71,20 @@ class Application
     private function loadSubscribers(ContainerInterface $container)
     {
         $subscribers = $this->appDir . '/app/subscribers.php';
+
         if (file_exists($subscribers)) {
             $func = require $subscribers;
             $func($container);
         }
     }
 
-    private function loadMiddlewares()
+    private function loadMiddlewares(App $app)
     {
         $middleware = $this->appDir . '/app/middleware.php';
 
         if (file_exists($middleware)) {
             $func = require $middleware;
-            $func($this->app);
+            $func($app);
         }
     }
 
@@ -108,14 +104,18 @@ class Application
                 $settings = array_merge_recursive($settings, $dev);
             }
         }
-        
-        $defs = array(
-            Settings::class => function() use ($settings) {
-                return new Settings($settings, $this->appDir);
-            }
-        );
 
-        $this->addDefinitions($defs);
+        $settings['appDir'] = $this->appDir;
+
+        $this->addDefinitions([
+            Settings::class => function () use ($settings) {
+                return new Settings($settings);
+            },
+            'appDir' => function () {
+                return $this->appDir;
+            }
+
+        ]);
     }
 
     private function loadDefinitions()
@@ -124,8 +124,8 @@ class Application
             App::class => function (ContainerInterface $container) {
                 return AppFactory::createFromContainer($container);
             },
-            'appDir' => function() {
-                return $this->appDir;
+            ResponseFactoryInterface::class => function (ContainerInterface $container) {
+                return $container->get(ResponseFactory::class);
             }
         ]);
 
