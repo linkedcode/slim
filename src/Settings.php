@@ -7,12 +7,14 @@ use Exception;
 class Settings
 {
     private readonly array $settings;
-    private readonly string $appDir;
+    
+    private array $drivers = [
+        'pdo_mysql' => 'mysql'
+    ];
 
-    public function __construct(array $settings, string $appDir)
+    public function __construct(array $settings)
     {
         $this->settings = $settings;
-        $this->appDir = $appDir;
     }
 
     public function get(string $name): mixed
@@ -34,25 +36,39 @@ class Settings
 
     public function getPublicKey(): string
     {
-        return $this->appDir . '/config/public.key';
+        return $this->getAppDir() . '/config/public.key';
+    }
+
+    public function getAppDir(): string
+    {
+        return $this->get('appDir');
     }
 
     /**
      * 'mysql:host=localhost;dbname=testdb';
      */
-    
     public function getDsn(): string
     {
         $db = $this->get('db');
 
-        $drivers = [
-            'pdo_mysql' => 'mysql'
-        ];
-
-        $driver = $drivers[$db['driver']];
-
-        $dsn = sprintf("%s:host=%s;dbname=%s", $driver, $db['host'], $db['dbname']);
+        $dsn = sprintf(
+            "%s:host=%s;dbname=%s",
+            $this->getDbDriver($db['driver']),
+            $db['host'],
+            $db['dbname']
+        );
 
         return $dsn;
+    }
+
+    private function getDbDriver(string $driver): string
+    {
+        if (isset($this->drivers[$driver])) {
+            return $this->drivers[$driver];
+        }
+
+        throw new Exception(
+            sprintf("Driver [%s] not found.", $driver)
+        );
     }
 }
