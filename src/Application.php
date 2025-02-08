@@ -37,7 +37,7 @@ class Application
         $app->run();
     }
 
-    private function addDefinitions(array $definitions): void
+    public function addDefinitions(array $definitions): void
     {
         $this->containerBuilder->addDefinitions($definitions);
     }
