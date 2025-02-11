@@ -90,21 +90,22 @@ class Application
 
     private function loadSettings()
     {
-        $file = $this->appDir . '/config/settings.php';
-        $settings = require $file;
+        $prod = $dev = [];
 
-        $fileProd = $this->appDir . '/config/settings.prod.php';
-        if (file_exists($fileProd)) {
-            $prod = require_once $fileProd;
-            $settings = array_merge_recursive($settings, $prod);
+        $file = $this->appDir . '/config/settings.php';
+        $common = require $file;
+
+        $file = $this->appDir . '/config/settings.prod.php';
+        if (file_exists($file)) {
+            $prod = require_once $file;
         } else {
-            $fileDev = $this->appDir . '/config/settings.dev.php';
-            if (file_exists($fileDev)) {
-                $dev = require_once $fileDev;
-                $settings = array_merge_recursive($settings, $dev);
+            $file = $this->appDir . '/config/settings.dev.php';
+            if (file_exists($file)) {
+                $dev = require_once $file;
             }
         }
 
+        $settings = array_merge_recursive($common, $dev, $prod);
         $settings['appDir'] = $this->appDir;
 
         $this->addDefinitions([
