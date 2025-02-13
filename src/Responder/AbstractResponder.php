@@ -13,6 +13,8 @@ abstract class AbstractResponder
     {
         if (is_bool($data)) {
             $data = array('success' => $data);
+        } elseif (is_null($data)) {
+            $data = array();
         } else {
             $data = $this->transform($data);
         }
