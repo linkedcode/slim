@@ -38,9 +38,10 @@ class ApiProblem
         return $this->statusCode;
     }
 
-    public function setErrors(array $errors): void
+    public function setErrors(array $errors): self
     {
         $this->errors = $errors;
+        return $this;
     }
 
     public function addError(array $error): void
@@ -53,9 +54,10 @@ class ApiProblem
         $this->instance = $instance;
     }
 
-    public function setDetail(string $detail)
+    public function setDetail(string $detail): self
     {
         $this->detail = $detail;
+        return $this;
     }
 
     public function getBody(): array
