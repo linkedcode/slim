@@ -12,11 +12,13 @@ class ApiProblem
     private string $detail = '';
 
     public const TYPE_VALIDATION_ERROR = 'validation-error';
-    public const TYPE_FORBIDDEN = 'forbidden';
+    public const TYPE_FORBIDDEN = 'Forbidden';
+    public const TYPE_BAD_REQUEST = 'Bad Request';
 
     private array $titles = [
         self::TYPE_VALIDATION_ERROR => 'Errores de validación',
-        self::TYPE_FORBIDDEN => 'Prohibido'
+        self::TYPE_FORBIDDEN => 'Prohibido',
+        self::TYPE_BAD_REQUEST => 'Bad request'
     ];
 
     public function __construct(string $type, int $statusCode)

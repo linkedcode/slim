@@ -17,7 +17,7 @@ class Settings
         $this->settings = $settings;
     }
 
-    public function get(string $name): mixed
+    public function get(string $name, mixed $default = null): mixed
     {
         if (isset($this->settings[$name])) {
             return $this->settings[$name];
@@ -29,6 +29,10 @@ class Settings
             if (isset($this->settings[$p[0]][$p[1]])) {
                 return $this->settings[$p[0]][$p[1]];
             }
+        }
+
+        if ($default !== null) {
+            return $default;
         }
 
         throw new Exception("No existe configuracion [{$name}]");
