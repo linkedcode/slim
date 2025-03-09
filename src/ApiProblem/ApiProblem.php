@@ -49,6 +49,16 @@ class ApiProblem
         $this->errors[] = $error;
     }
 
+    public function addError2(string $name, string $reason): static
+    {
+        $this->errors[] = array(
+            'name' => $name,
+            'reason' => $reason
+        );
+
+        return $this;
+    }
+
     public function setInstance(string $instance)
     {
         $this->instance = $instance;
