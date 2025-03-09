@@ -24,8 +24,11 @@ class ApiProblem
     public function __construct(string $type, int $statusCode)
     {
         $this->type = $type;
-        $this->title = $this->titles[$type];
         $this->statusCode = $statusCode;
+
+        if (isset($this->titles[$type])) {
+            $this->title = $this->titles[$type];
+        }
     }
 
     public function getTitle(): string
@@ -36,6 +39,12 @@ class ApiProblem
     public function getStatusCode(): int
     {
         return $this->statusCode;
+    }
+
+    public function setTitle(string $title): static
+    {
+        $this->title = $title;
+        return $this;
     }
 
     public function setErrors(array $errors): self
@@ -59,12 +68,13 @@ class ApiProblem
         return $this;
     }
 
-    public function setInstance(string $instance)
+    public function setInstance(string $instance): static
     {
         $this->instance = $instance;
+        return $this;
     }
 
-    public function setDetail(string $detail): self
+    public function setDetail(string $detail): static
     {
         $this->detail = $detail;
         return $this;
