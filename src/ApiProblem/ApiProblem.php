@@ -113,7 +113,7 @@ class ApiProblem
         return $this->type;
     }
 
-    private static function fromApiProblem(string $json): static
+    public static function fromApiProblem(string $json): static
     {
         $body = json_decode($json, true);
 
