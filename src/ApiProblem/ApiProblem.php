@@ -117,9 +117,9 @@ class ApiProblem
     {
         $body = json_decode($json, true);
 
-        $apiProblem = new static($body['title'], $body['status']);
+        $apiProblem = new static($body['type'], $body['status']);
 
-        unset($body['title'], $body['status']);
+        unset($body['type'], $body['status']);
         
         foreach ($body as $k => $v) {
             if (property_exists($apiProblem, $k) && !empty($v)) {
