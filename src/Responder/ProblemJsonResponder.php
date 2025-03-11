@@ -7,6 +7,7 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
+use TypeError;
 
 class ProblemJsonResponder
 {
@@ -55,6 +56,10 @@ class ProblemJsonResponder
 
     private function getStatusCode(): int
     {
+        if ($this->exception instanceof TypeError) {
+            return 500;
+        }
+
         return (int) $this->exception->getCode();
     }
 
