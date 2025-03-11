@@ -2,12 +2,12 @@
 
 namespace Linkedcode\Slim\Responder;
 
+use Error;
 use Linkedcode\Slim\ApiProblem\ApiProblemException;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
-use TypeError;
 
 class ProblemJsonResponder
 {
@@ -49,6 +49,10 @@ class ProblemJsonResponder
                 'detail' => $this->getDetail(),
                 'instance' => $this->getInstance()
             ];
+
+            if ($this->exception instanceof Error) {
+                $body['detail'] = 'Error. Seguramente es culpa del programador.';
+            }
         }
 
         return $body;
@@ -56,7 +60,7 @@ class ProblemJsonResponder
 
     private function getStatusCode(): int
     {
-        if ($this->exception instanceof TypeError) {
+        if ($this->exception instanceof Error) {
             return 500;
         }
 
