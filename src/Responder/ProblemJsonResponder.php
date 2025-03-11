@@ -2,22 +2,22 @@
 
 namespace Linkedcode\Slim\Responder;
 
-use Exception;
 use Linkedcode\Slim\ApiProblem\ApiProblemException;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Throwable;
 
 class ProblemJsonResponder
 {
     private ResponseFactoryInterface $responseFactory;
     private ServerRequestInterface $request;
-    private Exception $exception;
+    private Throwable $exception;
 
     public function __construct(
         ResponseFactoryInterface $responseFactory,
         ServerRequestInterface $request,
-        Exception $exception
+        Throwable $exception
     ) {
         $this->responseFactory = $responseFactory;
         $this->request = $request;
