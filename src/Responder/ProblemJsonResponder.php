@@ -47,7 +47,8 @@ class ProblemJsonResponder
                 'type' => $this->getType(),
                 'status' => $this->getStatusCode(),
                 'detail' => $this->getDetail(),
-                'instance' => $this->getInstance()
+                'instance' => $this->getInstance(),
+                'exception' => $this->exception::class
             ];
 
             if ($this->exception instanceof Error) {

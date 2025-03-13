@@ -3,12 +3,14 @@
 namespace Linkedcode\Slim;
 
 use DI\ContainerBuilder;
+use ErrorException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Slim\App;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
 use Slim\Psr7\Factory\ResponseFactory;
+use Throwable;
 
 class Application
 {
@@ -23,6 +25,7 @@ class Application
 
     public function run()
     {
+        $this->loadDefaults();
         $this->loadDefinitions();
         $this->loadSettings();
 
@@ -33,6 +36,7 @@ class Application
         $this->loadRoutes($app);
         $this->loadListeners($container);
         $this->loadSubscribers($container);
+        $this->loadRepositories($app);
 
         $app->run();
     }
@@ -40,6 +44,33 @@ class Application
     public function addDefinitions(array $definitions): void
     {
         $this->containerBuilder->addDefinitions($definitions);
+    }
+
+    private function loadDefaults()
+    {
+        $this->setErrorHandler();
+        $this->setExceptionHandler();
+    }
+
+    private function setErrorHandler()
+    {
+        set_error_handler(
+            function (int $errno, string $errstr, string|null $errfile = null, int|null $errline = null) {
+                if (!(error_reporting() & $errno)) {
+                    // This error code is not included in error_reporting
+                    return;
+                }
+                
+                throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+            }
+        );
+    }
+
+    private function setExceptionHandler()
+    {
+        set_exception_handler(function (Throwable $exception) {
+            error_log("Uncaught exception: " . $exception->getMessage());
+        });
     }
 
     private function loadRoutes(App $app)
@@ -93,7 +124,7 @@ class Application
         $prod = $dev = [];
 
         $file = $this->appDir . '/config/settings.php';
-        $common = require $file;
+        $common = require_once $file;
 
         $file = $this->appDir . '/config/settings.prod.php';
         if (file_exists($file)) {
@@ -115,7 +146,6 @@ class Application
             'appDir' => function () {
                 return $this->appDir;
             }
-
         ]);
     }
 
@@ -131,6 +161,16 @@ class Application
         ]);
 
         $file = $this->appDir . '/app/definitions.php';
+
+        if (file_exists($file)) {
+            $definitions = require $file;
+            $this->addDefinitions($definitions);
+        }
+    }
+
+    private function loadRepositories()
+    {
+        $file = $this->appDir . '/app/repositories.php';
 
         if (file_exists($file)) {
             $definitions = require $file;
