@@ -197,5 +197,7 @@ class RequestValidator
             case self::TYPE_STRING:
                 return "";
         }
+
+        return null;
     }
 }

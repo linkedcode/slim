@@ -2,84 +2,37 @@
 
 namespace Linkedcode\Slim\Responder;
 
-use Error;
+use Linkedcode\Slim\ApiProblem\ApiProblem;
 use Linkedcode\Slim\ApiProblem\ApiProblemException;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Throwable;
 
 class ProblemJsonResponder
 {
     private ResponseFactoryInterface $responseFactory;
-    private ServerRequestInterface $request;
-    private Throwable $exception;
+    private ApiProblem $problem;
 
     public function __construct(
         ResponseFactoryInterface $responseFactory,
         ServerRequestInterface $request,
-        Throwable $exception
+        ApiProblemException $exception
     ) {
         $this->responseFactory = $responseFactory;
-        $this->request = $request;
-        $this->exception = $exception;
+        $this->problem = $exception->getProblem();
+        $this->problem->setInstance($request->getUri()->getPath());
     }
 
     public function createResponse(): ResponseInterface
     {
-        $payload = json_encode($this->getBody(), JSON_PRETTY_PRINT);
+        $payload = json_encode($this->problem->getBody(), JSON_PRETTY_PRINT);
 
         $response = $this->responseFactory->createResponse()
             ->withHeader('Content-Type', 'application/problem+json')
-            ->withStatus($this->getStatusCode());
+            ->withStatus($this->problem->getStatusCode());
         
         $response->getBody()->write($payload);
 
         return $response;
-    }
-
-    private function getBody(): array
-    {
-        if ($this->exception instanceof ApiProblemException) {
-            $body = $this->exception->getProblem()->getBody();
-        } else {
-            $body = [
-                'type' => $this->getType(),
-                'status' => $this->getStatusCode(),
-                'detail' => $this->getDetail(),
-                'instance' => $this->getInstance(),
-                'exception' => $this->exception::class
-            ];
-
-            if ($this->exception instanceof Error) {
-                $body['detail'] = 'Error. Seguramente es culpa del programador.';
-            }
-        }
-
-        return $body;
-    }
-
-    private function getStatusCode(): int
-    {
-        if ($this->exception instanceof Error) {
-            return 500;
-        }
-
-        return (int) $this->exception->getCode();
-    }
-
-    private function getDetail(): string
-    {
-        return $this->exception->getMessage();
-    }
-
-    private function getType(): string
-    {
-        return 'about:blank';
-    }
-
-    private function getInstance(): string
-    {
-        return $this->request->getUri()->getPath();
     }
 }
