@@ -13,7 +13,9 @@ abstract class AbstractRequest
     protected const MAXIMUM = 'maximum';
     protected const MINIMUM = 'minimum';
     protected const IN = 'in';
+
     protected const TYPE = 'type';
+    protected const SUBTYPE = 'subtype';
 
     protected const OPTIONAL = 'optional';
     protected const REQUIRED = 'required';
@@ -21,6 +23,8 @@ abstract class AbstractRequest
     protected const TYPE_STRING = 'string';
     protected const TYPE_INTEGER = 'integer';
     protected const TYPE_NUMBER = 'number'; // float
+
+    protected const SUB_TYPE_URL = 'url';
 
     protected array $invalidParams = [];
 
@@ -50,8 +54,10 @@ abstract class AbstractRequest
     protected function validate(array $data): void
     {
         foreach ($this->getRules() as $field => $rules) {
-            if ($this->isOptional($field) && !isset($data[$field])) {
-                continue;
+            if ($this->isOptional($field)) {
+                if (!isset($data[$field]) || $data[$field] === "") {
+                    continue;
+                }
             }
 
             if ($this->isRequired($field) && !isset($data[$field])) {
@@ -96,6 +102,9 @@ abstract class AbstractRequest
                     break;
                 case self::TYPE:
                     $this->validateType($field, $value, $ruleValue);
+                    break;
+                case self::SUBTYPE:
+                    $this->validateSubType($field, $value, $ruleValue);
                     break;
                 default:
                     throw new Exception("Falta programar regla de validacion `{$rule}`");
@@ -161,6 +170,17 @@ abstract class AbstractRequest
         }
     }
 
+    private function validateSubType(string $field, mixed $value, string $subType): void
+    {
+        switch ($subType) {
+            case self::SUB_TYPE_URL:
+                $this->validateUrl($field, $value);
+                break;
+            default:
+                throw new Exception("Falta programar regla de validacion");
+        }
+    }
+
     private function validateType(string $field, mixed $value, string $type): void
     {
         $actual = gettype($value);
@@ -185,6 +205,20 @@ abstract class AbstractRequest
         );
 
         $this->addInvalidParam($field, $msg);
+    }
+
+    private function validateUrl(string $field, string $url)
+    {
+        $url = filter_var($url, FILTER_SANITIZE_URL);
+
+        if (filter_var($url, FILTER_VALIDATE_URL)) {
+            $scheme = parse_url($url, PHP_URL_SCHEME);
+            if (in_array($scheme, ['https', 'http'])) {
+                return true;
+            }
+        }
+
+        $this->addInvalidParam($field, "No es una URL válida, recuerde incluir http(s).");
     }
 
     private function checkViolations()
