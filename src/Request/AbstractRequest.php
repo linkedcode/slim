@@ -23,6 +23,7 @@ abstract class AbstractRequest
     protected const TYPE_STRING = 'string';
     protected const TYPE_INTEGER = 'integer';
     protected const TYPE_NUMBER = 'number'; // float
+    protected const TYPE_BOOL = 'boolean';
 
     protected const SUB_TYPE_URL = 'url';
 
