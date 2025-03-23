@@ -27,6 +27,7 @@ class Application
     {
         $this->loadDefaults();
         $this->loadDefinitions();
+        $this->loadRepositories();
         $this->loadSettings();
 
         $container = $this->containerBuilder->build();
@@ -36,7 +37,6 @@ class Application
         $this->loadRoutes($app);
         $this->loadListeners($container);
         $this->loadSubscribers($container);
-        $this->loadRepositories($app);
 
         $app->run();
     }
