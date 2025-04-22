@@ -26,8 +26,14 @@ class Settings
         if (stripos($name, '.')) {
             $p = explode('.', $name);
 
-            if (isset($this->settings[$p[0]][$p[1]])) {
-                return $this->settings[$p[0]][$p[1]];
+            if (count($p) == 2) {
+                if (isset($this->settings[$p[0]][$p[1]])) {
+                    return $this->settings[$p[0]][$p[1]];
+                }
+            } else if (count($p) == 3) {
+                if (isset($this->settings[$p[0]][$p[1]][$p[2]])) {
+                    return $this->settings[$p[0]][$p[1]][$p[2]];
+                }
             }
         }
 

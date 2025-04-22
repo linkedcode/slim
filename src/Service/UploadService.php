@@ -9,15 +9,20 @@ use Psr\Http\Message\UploadedFileInterface;
 class UploadService
 {
     private Settings $settings;
+    private string $path;
 
     public function __construct(Settings $settings)
     {
         $this->settings = $settings;
     }
 
+    public function setConfigPath(string $config)
+    {
+        $this->path = $this->settings->get($config);
+    }
+
     protected function createDirs(UploadedFileInterface $file, int $entityId)
     {
-        $path = $this->settings->get('upload.path');
         $full = null;
 
         $type = $file->getClientMediaType();
@@ -44,7 +49,7 @@ class UploadService
             $dir = sprintf("%'.09d", $entityId);
             $dirs = str_split($dir, 3);
 
-            $fulldir = $path . implode("/", $dirs) . "/";
+            $fulldir = $this->path . implode("/", $dirs) . "/";
             $full = $fulldir . substr($md5, 0, 8) . "." . $ext;
             $full = $this->getFilenameVersion($full, "orig");
             
@@ -59,7 +64,7 @@ class UploadService
     public function upload(UploadedFileInterface $file, int $entityId): string|bool
     {
         try {
-            $path = $this->settings->get('upload.path');
+            $path = $this->path;
             $full = $this->createDirs($file, $entityId);
 
             $file->moveTo($full);
