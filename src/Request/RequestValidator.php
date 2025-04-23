@@ -86,6 +86,10 @@ class RequestValidator
                 case self::TYPE:
                     $value = $this->validateType($field, $value, $ruleValue);
                     break;
+                case self::OPTIONAL:
+                    // Ya deberia haber sido chequeado esto antes de llegar
+                    // a esta funcion.
+                    break;
                 default:
                     throw new Exception("Falta programar `{$rule}`");
             }
