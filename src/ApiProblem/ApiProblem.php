@@ -14,10 +14,12 @@ class ApiProblem
     public const TYPE_VALIDATION_ERROR = 'validation-error';
     public const TYPE_FORBIDDEN = 'Forbidden';
     public const TYPE_BAD_REQUEST = 'Bad Request';
+    public const TYPE_INTERNAL_SERVER_ERROR = 'Internal Server Error';
 
     private array $titles = [
         self::TYPE_VALIDATION_ERROR => 'Errores de validación',
         self::TYPE_FORBIDDEN => 'Prohibido',
+        self::TYPE_INTERNAL_SERVER_ERROR => 'Error interno del servidor',
         self::TYPE_BAD_REQUEST => 'Bad request'
     ];
 
@@ -29,6 +31,16 @@ class ApiProblem
         if (isset($this->titles[$type])) {
             $this->title = $this->titles[$type];
         }
+    }
+
+    public static function createInternalServerError(): self
+    {
+        return new self(self::TYPE_INTERNAL_SERVER_ERROR, 500);
+    }
+
+    public static function createForbidden(): self
+    {
+        return new self(self::TYPE_FORBIDDEN, 403);
     }
 
     public function getTitle(): string
@@ -78,6 +90,11 @@ class ApiProblem
     {
         $this->detail = $detail;
         return $this;
+    }
+
+    public function getDetail(): string
+    {
+        return $this->detail;
     }
 
     public function getBody(): array

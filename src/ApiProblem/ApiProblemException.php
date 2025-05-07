@@ -14,7 +14,7 @@ class ApiProblemException extends Exception
         $this->problem = $problem;
         
         parent::__construct(
-            $problem->getTitle(), $problem->getStatusCode(), $previous
+            $problem->getDetail(), $problem->getStatusCode(), $previous
         );
     }
 
