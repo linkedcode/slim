@@ -3,6 +3,8 @@
 namespace Linkedcode\Slim\Service;
 
 use Exception;
+use Linkedcode\Slim\ApiProblem\ApiProblem;
+use Linkedcode\Slim\ApiProblem\ApiProblemException;
 use Linkedcode\Slim\Settings;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -70,7 +72,11 @@ class UploadService
             $file->moveTo($full);
 
             if ($this->checkMinSize($full) === false) {
-                return false;
+                unlink($full);
+
+                $problem = new ApiProblem(ApiProblem::TYPE_BAD_REQUEST, 400);
+                $problem->setDetail("La imagen es demasiado pequeña");
+                $problem->throw();
             }
 
             $full = $this->createWebpVersion($full);
@@ -82,7 +88,9 @@ class UploadService
             $relPath = str_replace($path, "", $full);
             return $relPath;
         } catch (Exception $e) {
-            throw new Exception($e->getMessage());
+            $problem = new ApiProblem(ApiProblem::TYPE_BAD_REQUEST, 400);
+            $problem->setDetail($e->getMessage());
+            $problem->throw();
         }
     }
 
