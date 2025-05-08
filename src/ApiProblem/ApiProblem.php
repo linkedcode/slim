@@ -38,9 +38,18 @@ class ApiProblem
         return new self(self::TYPE_INTERNAL_SERVER_ERROR, 500);
     }
 
-    public static function createForbidden(): self
+    public static function createForbidden(string $detail = ""): self
     {
-        return new self(self::TYPE_FORBIDDEN, 403);
+        $self = new self(self::TYPE_FORBIDDEN, 403);
+        $self->setDetail($detail);
+        return $self;
+    }
+
+    public static function createBadRequest(string $detail): self
+    {
+        $self = new self(self::TYPE_BAD_REQUEST, 400);
+        $self->setDetail($detail);
+        return $self;
     }
 
     public function getTitle(): string
