@@ -3,6 +3,7 @@
 namespace Linkedcode\Slim\Service;
 
 use Exception;
+use GdImage;
 use Linkedcode\Slim\ApiProblem\ApiProblem;
 use Linkedcode\Slim\ApiProblem\ApiProblemException;
 use Linkedcode\Slim\Settings;
@@ -12,6 +13,7 @@ class UploadService
 {
     private Settings $settings;
     private string $path;
+    private string $filename;
 
     public function __construct(Settings $settings)
     {
@@ -21,6 +23,16 @@ class UploadService
     public function setConfigPath(string $config)
     {
         $this->path = $this->settings->get($config);
+    }
+
+    public function getFilename(): string
+    {
+        return $this->filename;
+    }
+
+    public function getFullPath(string $path): string
+    {
+        return rtrim($this->path, '/') . '/' . $path;
     }
 
     protected function createDirs(UploadedFileInterface $file, int $entityId)
@@ -66,26 +78,27 @@ class UploadService
     public function upload(UploadedFileInterface $file, int $entityId): string|bool
     {
         try {
-            $path = $this->path;
-            $full = $this->createDirs($file, $entityId);
+            $this->filename = $this->createDirs($file, $entityId);
 
-            $file->moveTo($full);
+            $file->moveTo($this->filename);
 
-            if ($this->checkMinSize($full) === false) {
-                unlink($full);
+            if ($this->checkMinSize($this->filename) === false) {
+                unlink($this->filename);
 
                 $problem = new ApiProblem(ApiProblem::TYPE_BAD_REQUEST, 400);
                 $problem->setDetail("La imagen es demasiado pequeña");
                 $problem->throw();
             }
 
-            $full = $this->createWebpVersion($full);
+            $this->filename = $this->createWebpVersion($this->filename);
 
-            $this->checkMaxSize($full, true);
+            $this->checkMaxSize($this->filename, true);
 
-            $this->createVersions($full);
+            $this->createVersions($this->filename);
 
-            $relPath = str_replace($path, "", $full);
+            $this->createOpenGraphImage($this->filename);
+
+            $relPath = str_replace($this->path, "", $this->filename);
             return $relPath;
         } catch (Exception $e) {
             $problem = new ApiProblem(ApiProblem::TYPE_BAD_REQUEST, 400);
@@ -136,7 +149,17 @@ class UploadService
         return false;
     }
 
-    protected function createVersion(string $source, string $target, int $thumbWidth, int $thumbHeight): bool
+    public function createOpenGraphImage(string $source)
+    {
+        $image = $this->generateVersion($source, 400, 400);
+
+        $pathinfo = pathinfo($source);
+        $target = $pathinfo['dirname'] . '/og.400.jpg';
+
+        imagejpeg($image, $target, 90);
+    }
+
+    public function generateVersion(string $source, int $thumbWidth, int $thumbHeight): GdImage
     {
         $image = $this->createImageFromFile($source);
 
@@ -173,6 +196,13 @@ class UploadService
             $newWidth, $newHeight,
             $width, $height
         );
+
+        return $thumb;
+    }
+
+    protected function createVersion(string $source, string $target, int $thumbWidth, int $thumbHeight): bool
+    {
+        $thumb = $this->generateVersion($source, $thumbWidth, $thumbHeight);
 
         imagewebp($thumb, $target, 90);
 
