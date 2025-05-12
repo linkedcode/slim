@@ -151,10 +151,10 @@ class UploadService
 
     public function createOpenGraphImage(string $source)
     {
-        $image = $this->generateVersion($source, 400, 400);
+        $image = $this->generateVersion($source, 600, 600);
 
         $pathinfo = pathinfo($source);
-        $target = $pathinfo['dirname'] . '/og.400.jpg';
+        $target = $pathinfo['dirname'] . '/og.jpg';
 
         imagejpeg($image, $target, 90);
     }
