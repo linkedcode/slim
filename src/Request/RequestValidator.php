@@ -15,7 +15,6 @@ class RequestValidator
     protected const MINIMUM = 'minimum';
     protected const IN = 'in';
     protected const TYPE = 'type';
-    protected const OPTIONAL = 'optional';
 
     protected const TYPE_STRING = 'string';
     protected const TYPE_INTEGER = 'integer';
@@ -29,16 +28,20 @@ class RequestValidator
     {
         $this->conditionalRules($data);
 
-        foreach ($this->getRules() as $field => $fieldRules) {
-            if (isset($fieldRules[self::OPTIONAL])) {
-                // Si es opcional y no hay valor, lo dejamos seguir,
-                // pero si hay valor lo validamos normalmente.
-                if (!isset($data[$field]) || is_null($data[$field])) {
+        foreach ($this->getRules() as $field => $rules) {
+            if ($this->isOptional($rules)) {
+                if ($data[$field] === "") {
+                    unset($data[$field]);
+                    continue;
+                }
+
+                if (is_null($data[$field])) {
+                    unset($data[$field]);
                     continue;
                 }
             }
 
-            $data[$field] = $this->validateField($field, $fieldRules, $data);
+            $data[$field] = $this->validateField($field, $rules, $data);
         }
 
         $this->checkViolations();
@@ -46,9 +49,25 @@ class RequestValidator
         return $data;
     }
 
-    protected function conditionalRules(array $data): void
+    protected function isOptional(array $rules): bool
     {
+        if ($this->isRequired($rules)) {
+            return false;
+        }
+
+        return true;
     }
+
+    protected function isRequired(array $rules): bool
+    {
+        if (isset($rules[self::REQUIRED])) {
+            return $rules[self::REQUIRED];
+        }
+
+        return false;
+    }
+
+    protected function conditionalRules(array $data): void {}
 
     protected function getRules(): array
     {
@@ -85,10 +104,6 @@ class RequestValidator
                     break;
                 case self::TYPE:
                     $value = $this->validateType($field, $value, $ruleValue);
-                    break;
-                case self::OPTIONAL:
-                    // Ya deberia haber sido chequeado esto antes de llegar
-                    // a esta funcion.
                     break;
                 default:
                     throw new Exception("Falta programar `{$rule}`");
@@ -186,7 +201,7 @@ class RequestValidator
         if (false === empty($this->invalidParams)) {
             $apiProblem = new ApiProblem(ApiProblem::TYPE_VALIDATION_ERROR, 422);
             $apiProblem->setErrors($this->invalidParams);
-            
+
             throw new ApiProblemException($apiProblem);
         }
     }
