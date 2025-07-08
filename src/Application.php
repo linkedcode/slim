@@ -6,6 +6,8 @@ use DI\ContainerBuilder;
 use ErrorException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Slim\App;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
@@ -16,6 +18,7 @@ class Application
 {
     private string $appDir;
     private ContainerBuilder $containerBuilder;
+    private App|null $app = null;
 
     public function __construct(string $appDir)
     {
@@ -23,27 +26,41 @@ class Application
         $this->containerBuilder = new ContainerBuilder();
     }
 
-    public function run()
+    public function run(): void
     {
+        $this->init();
+        $this->app->run();
+    }
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        $this->init();
+        return $this->app->handle($request);
+    }
+
+    public function addDefinitions(array $definitions): void
+    {
+        $this->containerBuilder->addDefinitions($definitions);
+    }
+
+    private function init()
+    {
+        if ($this->app instanceof App) {
+            return;
+        }
+
         $this->loadDefaults();
         $this->loadDefinitions();
         $this->loadRepositories();
         $this->loadSettings();
 
         $container = $this->containerBuilder->build();
-        $app = $container->get(App::class);
+        $this->app = $container->get(App::class);
 
-        $this->loadMiddlewares($app);
-        $this->loadRoutes($app);
+        $this->loadMiddlewares($this->app);
+        $this->loadRoutes($this->app);
         $this->loadListeners($container);
         $this->loadSubscribers($container);
-
-        $app->run();
-    }
-
-    public function addDefinitions(array $definitions): void
-    {
-        $this->containerBuilder->addDefinitions($definitions);
     }
 
     private function loadDefaults()
