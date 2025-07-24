@@ -12,9 +12,11 @@ class ApiProblemException extends Exception
     public function __construct(ApiProblem $problem, Throwable|null $previous = null)
     {
         $this->problem = $problem;
-        
+
         parent::__construct(
-            $problem->getDetail(), $problem->getStatusCode(), $previous
+            $problem->getDetail(),
+            $problem->getStatusCode(),
+            $previous
         );
     }
 

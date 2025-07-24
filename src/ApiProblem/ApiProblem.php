@@ -11,16 +11,16 @@ class ApiProblem
     private string $type = '';
     private string $detail = '';
 
-    public const TYPE_VALIDATION_ERROR = 'validation-error';
-    public const TYPE_FORBIDDEN = 'Forbidden';
     public const TYPE_BAD_REQUEST = 'Bad Request';
+    public const TYPE_FORBIDDEN = 'Forbidden';
     public const TYPE_INTERNAL_SERVER_ERROR = 'Internal Server Error';
+    public const TYPE_VALIDATION_ERROR = 'validation-error';
 
     private array $titles = [
-        self::TYPE_VALIDATION_ERROR => 'Errores de validación',
+        self::TYPE_BAD_REQUEST => 'Bad request',
         self::TYPE_FORBIDDEN => 'Prohibido',
         self::TYPE_INTERNAL_SERVER_ERROR => 'Error interno del servidor',
-        self::TYPE_BAD_REQUEST => 'Bad request'
+        self::TYPE_VALIDATION_ERROR => 'Errores de validación',
     ];
 
     public function __construct(string $type, int $statusCode)
@@ -31,6 +31,13 @@ class ApiProblem
         if (isset($this->titles[$type])) {
             $this->title = $this->titles[$type];
         }
+    }
+
+    public static function newValidationError(array $errors): self
+    {
+        $problem = new self(self::TYPE_VALIDATION_ERROR, 422);
+        $problem->setErrors($errors);
+        return $problem;
     }
 
     public static function createInternalServerError(): self
@@ -146,7 +153,7 @@ class ApiProblem
         $apiProblem = new static($body['type'], $body['status']);
 
         unset($body['type'], $body['status']);
-        
+
         foreach ($body as $k => $v) {
             if (property_exists($apiProblem, $k) && !empty($v)) {
                 $apiProblem->$k = $v;

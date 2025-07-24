@@ -6,8 +6,12 @@ use Psr\Http\Message\ServerRequestInterface;
 
 abstract class AbstractRequest
 {
+    use RequestValidatorTrait;
+
     private function __construct(array $data)
     {
+        $data = $this->validate($data);
+
         foreach ($data as $key => $value) {
             if (property_exists($this, $key)) {
                 $this->$key = $value;

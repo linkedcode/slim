@@ -8,14 +8,14 @@ abstract class AbstractTransformer
 {
     public function getTimestamp(int $timestamp, $options = []): array
     {
-        $dt = [];
+        $datetime = DateTime::createFromTimestamp($timestamp);
 
-        $datetime = new DateTime();
-        $datetime->setTimestamp($timestamp);
-
-        $dt['datetime'] = $datetime->format("d-m-Y H:i:s");
-        $dt['date'] = $datetime->format("d-m-Y");
-        $dt['time'] = $datetime->format("H:i:s");
+        $dt = [
+            'timestamp' => $timestamp,
+            'datetime' => $datetime->format("d-m-Y H:i:s"),
+            'date' => $datetime->format("d-m-Y"),
+            'time' => $datetime->format("H:i:s")
+        ];
 
         return $dt;
     }
