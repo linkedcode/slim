@@ -7,17 +7,17 @@ use Linkedcode\Slim\ApiProblem\ApiProblem;
 
 trait RequestValidatorTrait
 {
-    protected const MIN_LENGTH = 'minLength';
-    protected const MAX_LENGTH = 'maxLength';
-    protected const REQUIRED = 'required';
-    protected const MAXIMUM = 'maximum';
-    protected const MINIMUM = 'minimum';
-    protected const IN = 'in';
-    protected const TYPE = 'type';
+    protected const string MIN_LENGTH = "minLength";
+    protected const MAX_LENGTH = "maxLength";
+    protected const REQUIRED = "required";
+    protected const MAXIMUM = "maximum";
+    protected const MINIMUM = "minimum";
+    protected const IN = "in";
+    protected const TYPE = "type";
 
-    protected const TYPE_STRING = 'string';
-    protected const TYPE_INTEGER = 'integer';
-    protected const TYPE_NUMBER = 'number'; // float
+    protected const TYPE_STRING = "string";
+    protected const TYPE_INTEGER = "integer";
+    protected const TYPE_NUMBER = "number"; // float
 
     protected array $invalidParams = [];
 
@@ -121,17 +121,26 @@ trait RequestValidatorTrait
         return $value;
     }
 
-    private function validateMinLength(string $field, mixed $value, int $minLength): mixed
-    {
+    private function validateMinLength(
+        string $field,
+        mixed $value,
+        int $minLength,
+    ): mixed {
         if (strlen($value) < $minLength) {
-            $this->addInvalidParam($field, "La longitud mínima es de {$minLength} caracteres.");
+            $this->addInvalidParam(
+                $field,
+                "La longitud mínima es de {$minLength} caracteres.",
+            );
         }
 
         return $value;
     }
 
-    private function validateMinimum(string $field, mixed $value, int $minimum): mixed
-    {
+    private function validateMinimum(
+        string $field,
+        mixed $value,
+        int $minimum,
+    ): mixed {
         if (intval($value) < $minimum) {
             $this->addInvalidParam($field, "El valor mínimo es de {$minimum}.");
         }
@@ -139,8 +148,11 @@ trait RequestValidatorTrait
         return $value;
     }
 
-    private function validateMaximum(string $field, mixed $value, int $maximum): mixed
-    {
+    private function validateMaximum(
+        string $field,
+        mixed $value,
+        int $maximum,
+    ): mixed {
         if (intval($value) > $maximum) {
             $this->addInvalidParam($field, "El valor máximo es de {$maximum}.");
         }
@@ -148,17 +160,26 @@ trait RequestValidatorTrait
         return $value;
     }
 
-    private function validateMaxLength(string $field, mixed $value, int $maxLength): mixed
-    {
+    private function validateMaxLength(
+        string $field,
+        mixed $value,
+        int $maxLength,
+    ): mixed {
         if (strlen($value) > $maxLength) {
-            $this->addInvalidParam($field, "La longitud máxima es de {$maxLength} caracteres.");
+            $this->addInvalidParam(
+                $field,
+                "La longitud máxima es de {$maxLength} caracteres.",
+            );
         }
 
         return $value;
     }
 
-    private function validateIn(string $field, string $value, array $validValues): mixed
-    {
+    private function validateIn(
+        string $field,
+        string $value,
+        array $validValues,
+    ): mixed {
         $validValuesKeys = array_keys($validValues);
         $validValuesNames = array_values($validValues);
 
@@ -169,15 +190,20 @@ trait RequestValidatorTrait
         $value = strtolower($value);
 
         if (!in_array($value, $validValuesKeys)) {
-            $msg = "El valor '{$value}' no es valido. Valores válidos: " . implode(", ", $validValuesNames);
+            $msg =
+                "El valor '{$value}' no es valido. Valores válidos: " .
+                implode(", ", $validValuesNames);
             $this->addInvalidParam($field, $msg);
         }
 
         return $value;
     }
 
-    private function validateType(string $field, mixed $value, string $type): mixed
-    {
+    private function validateType(
+        string $field,
+        mixed $value,
+        string $type,
+    ): mixed {
         switch ($type) {
             case self::TYPE_INTEGER:
                 return intval($value);
@@ -192,7 +218,7 @@ trait RequestValidatorTrait
 
     private function addInvalidParam(string $name, string $reason): void
     {
-        $this->invalidParams[] = array('name' => $name, 'reason' => $reason);
+        $this->invalidParams[] = ["name" => $name, "reason" => $reason];
     }
 
     private function checkViolations()
