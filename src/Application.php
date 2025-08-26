@@ -4,6 +4,7 @@ namespace Linkedcode\Slim;
 
 use DI\ContainerBuilder;
 use ErrorException;
+use Linkedcode\Base\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -77,7 +78,7 @@ class Application
                     // This error code is not included in error_reporting
                     return;
                 }
-                
+
                 throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
             }
         );
@@ -109,7 +110,7 @@ class Application
     private function loadListeners(ContainerInterface $container)
     {
         $listeners = $this->appDir . '/app/listeners.php';
-        
+
         if (file_exists($listeners)) {
             $func = require $listeners;
             $func($container);
