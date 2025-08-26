@@ -2,8 +2,8 @@
 
 namespace Linkedcode\Slim\Handler;
 
+use Linkedcode\Base\Responder\ProblemJsonResponder;
 use Psr\Http\Message\ResponseInterface;
-use Linkedcode\Slim\Responder\ProblemJsonResponder;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Interfaces\ErrorHandlerInterface;
