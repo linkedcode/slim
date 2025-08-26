@@ -2,9 +2,9 @@
 
 namespace Linkedcode\Slim\Handler;
 
+use Linkedcode\Base\Responder\ProblemJsonResponder;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Handlers\ErrorHandler;
-use Linkedcode\Slim\Responder\ProblemJsonResponder;
 
 class HttpErrorHandler extends ErrorHandler
 {
