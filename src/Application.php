@@ -12,6 +12,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Slim\App;
 use Slim\Exception\HttpNotFoundException;
 use Slim\Factory\AppFactory;
+use Slim\Handlers\Strategies\RequestHandler;
 use Slim\Psr7\Factory\ResponseFactory;
 use Throwable;
 
@@ -57,6 +58,7 @@ class Application
 
         $container = $this->containerBuilder->build();
         $this->app = $container->get(App::class);
+        //$this->setRequestHandlerInvocationStrategy();
 
         $this->loadMiddlewares($this->app);
         $this->loadRoutes($this->app);
@@ -64,10 +66,16 @@ class Application
         $this->loadSubscribers($container);
     }
 
+    private function setRequestHandlerInvocationStrategy()
+    {
+        $routeCollector = $this->app->getRouteCollector();
+        $routeCollector->setDefaultInvocationStrategy(new RequestHandler(true));
+    }
+
     private function loadDefaults()
     {
-        $this->setErrorHandler();
-        $this->setExceptionHandler();
+        //$this->setErrorHandler();
+        //$this->setExceptionHandler();
     }
 
     private function setErrorHandler()
