@@ -22,6 +22,8 @@ class Application
     private ContainerBuilder $containerBuilder;
     private App|null $app = null;
 
+    private array $constants = [];
+
     public function __construct(string $appDir)
     {
         $this->appDir = $appDir;
@@ -45,25 +47,41 @@ class Application
         $this->containerBuilder->addDefinitions($definitions);
     }
 
+    public function addConstant($name, $value)
+    {
+        $this->constants[$name] = $value;
+    }
+
+    public function getSettings(): Settings
+    {
+        return $this->app->getContainer()->get(Settings::class);
+    }
+
     private function init()
     {
         if ($this->app instanceof App) {
             return;
         }
 
+        $container = $this->buildContainer();
+        $this->app = $container->get(App::class);
+
+        $this->loadMiddlewares($this->app);
+        $this->loadRoutes($this->app);
+        $this->loadListeners($container);
+        $this->loadSubscribers($container);
+    }
+
+    public function buildContainer(): ContainerInterface
+    {
         $this->loadDefaults();
         $this->loadDefinitions();
         $this->loadRepositories();
         $this->loadSettings();
 
         $container = $this->containerBuilder->build();
-        $this->app = $container->get(App::class);
-        //$this->setRequestHandlerInvocationStrategy();
 
-        $this->loadMiddlewares($this->app);
-        $this->loadRoutes($this->app);
-        $this->loadListeners($container);
-        $this->loadSubscribers($container);
+        return $container;
     }
 
     private function setRequestHandlerInvocationStrategy()
@@ -145,29 +163,17 @@ class Application
         }
     }
 
-    private function loadSettings()
+    private function loadSettings(): void
     {
-        $prod = $dev = [];
+        $settings = new Settings($this->appDir . '/config');
 
-        $file = $this->appDir . '/config/settings.php';
-        $common = require_once $file;
-
-        $file = $this->appDir . '/config/settings.prod.php';
-        if (file_exists($file)) {
-            $prod = require_once $file;
-        } else {
-            $file = $this->appDir . '/config/settings.dev.php';
-            if (file_exists($file)) {
-                $dev = require_once $file;
-            }
+        foreach ($this->constants as $name => $key) {
+            define($name, $settings->get($key));
         }
-
-        $settings = array_merge_recursive($common, $dev, $prod);
-        $settings['appDir'] = $this->appDir;
 
         $this->addDefinitions([
             Settings::class => function () use ($settings) {
-                return new Settings($settings);
+                return $settings;
             },
             'appDir' => function () {
                 return $this->appDir;
